@@ -1,64 +1,100 @@
-<!-- 参考　https://dp778.co.jp/blog/production/6743/ -->
+<!-- 参考　https://notetoself-dy.com/blender-threejs-gltf/ -->
 
 
 <!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>簡単な3Dオブジェクトを表示させる</title>
-  <meta name="robots" content="noindex,follow">
+  <title>three.js GLTF</title>
+
+  <style>
+    body {
+        margin: 0;
+        overflow: hidden;
+    } 
+  </style>  
 </head>
+
+
+
 <body>
-  <canvas id="canvas"></canvas>
+
+  <div id="WebGL-output">
+  </div>
+
+
   <script src="./three.min.js"></script>
 
+  <script type="module">
+  //import * as THREE from'https://unpkg.com/three@0.126.1/build/three.module.js';
+   import { OrbitControls } from 'https://unpkg.com/three@0.126.1/examples/jsm/controls/OrbitControls.js';
+   import { GLTFLoader } from 'https://unpkg.com/three@0.126.1/examples/jsm/loaders/GLTFLoader.js';
 
 
-<!-- setting.js -->
-  <script >
 
 
-  //基本設定
-  var width = 900;//横幅
-  var height = 900;//縦幅
-
-  var renderer = new THREE.WebGLRenderer({
-    canvas: document.querySelector("#canvas"),//id="canvas"に描画
-    alpha: true //背景を透過する
-  });
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(width, height);
-  var scene = new THREE.Scene();
-
-  // カメラ設定
-  var camera = new THREE.PerspectiveCamera(3,width / height,1,10000);//視野角,縦横比,手前の距離,奥の距離
-  camera.position.set(0, 0, 1000);//カメラ位置
+   
+    let camera;
+    let scene;
+    let renderer;
+    let model;
+ 
+    init();
+    animate();
     
-  // ライト設定
-  ambientLight = new THREE.AmbientLight(0xffffff);//環境光源
-  hemisphereLight = new THREE.HemisphereLight(0xffffff,0x4169e1, 0.5);//半球光源
-  scene.add(hemisphereLight);
-  scene.add(ambientLight);
-
-
-  // ボックス
-  var geometry = new THREE.BoxGeometry(10, 10, 10);//x,y,z
-  var material = new THREE.MeshStandardMaterial({color: 0xaaaaaa});
-  var box = new THREE.Mesh(geometry, material);
-  scene.add(box);
-
-
-
-  // 実行
-  animate();
-  function animate(){
-     renderer.render(scene, camera);
-  };
-
-
-  </script>
-
-
+    function init() {
+        //シーンの作成
+        scene = new THREE.Scene();
+ 
+        //カメラの作成
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        //カメラセット
+        camera.position.set(-20, 30, 50);
+        camera.lookAt(new THREE.Vector3(0, 10, 0));
+        
+         // 滑らかにカメラコントローラーを制御する
+        const controls = new OrbitControls(camera, document.body);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.2;
+ 
+        //光源
+        const dirLight = new THREE.SpotLight(0xffffff,1.5);//color,強度
+        dirLight.position.set(-20, 30, 30);
+        scene.add(dirLight);
+ 
+        //レンダラー
+        renderer = new THREE.WebGLRenderer({ 
+            alpha: true,
+            antialias: true
+        });
+        renderer.setClearColor(new THREE.Color(0xffffff));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+ 
+        //glbファイルの読み込み
+        const loader = new GLTFLoader();
+ 
+        loader.load('https://rawcdn.githack.com/nishi-dy/glb--files/d0a6e1e252671749fc9d80dd5e8e375f132dab56/glass.glb', function(gltf) {
+            model = gltf.scene;
+            model.traverse((object) => { //モデルの構成要素
+                if(object.isMesh) { //その構成要素がメッシュだったら
+                object.material.trasparent = true;//透明許可
+                object.material.opacity = 0.8;//透過
+                object.material.depthTest = true;//陰影で消える部分
+                }})
+            scene.add(model);
+        }, undefined, function(e) {
+            console.error(e);
+        });
+ 
+        document.getElementById("WebGL-output").appendChild(renderer.domElement);
+    }
+ 
+    function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+    }
+ 
+</script>
+ 
 </body>
 </html>
